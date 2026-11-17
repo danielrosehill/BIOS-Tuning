@@ -38,7 +38,13 @@ for how to see and type on the user's KVM model.
 - If no highlight is visible after an arrow key (graphical setups such as Gigabyte's often hide it until
   the mouse moves), click the item in the KVM video with the browser: KVMs with an absolute mouse pass the
   click through. Then use keys again; the highlight follows the click.
-- One key, then one screenshot. Arrow keys move the highlight; read where it is before Enter.
+- One key, then one screenshot. Send keys at least 0.3 s apart (`--delay 0.3`); faster bursts are dropped
+  (16 Downs at 0.12 s moved 2 rows, 2026-11-17). Clicks in quick succession get dropped too: one click, one
+  screenshot.
+- **Never scroll with PageUp/PageDown, +/- or the mouse wheel.** In AMI setups those keys change the highlighted
+  value (PageDown flipped NumLock On -> Off on 2026-11-17). Move with arrow keys or click the row.
+- Before pressing Enter on a menu item, confirm on a screenshot that the highlight is where you think: a dropped
+  click leaves it on the previous row and Enter opens the wrong dialog. Read every dialog's title before Yes. Arrow keys move the highlight; read where it is before Enter.
 - Read every value on the screen before changing anything. Crop or zoom the screenshot when the text is small.
 - When you find a setting's real path, write it into the machine's `settings_map` in `machines.json`.
 - Never press F10/Enter or any "Load defaults" key unless the step you are executing says so.

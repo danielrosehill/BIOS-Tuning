@@ -31,6 +31,12 @@ Many boards open in an "EZ" or simplified mode first: F7 (MSI, ASUS) or F2 (Giga
 | Primary display | Settings > IO Ports > Initial Display Output | Settings > Advanced > Integrated Graphics | Advanced > System Agent > Graphics | Advanced > Chipset > Primary Graphics Adapter |
 | Resizable BAR | Settings > IO Ports > Above 4G Decoding + Re-Size BAR | Settings > Advanced > PCIe Sub-system | Advanced > PCI Subsystem | Advanced > Chipset |
 
+## Seen in the field
+
+| Board / BIOS | Observation (date) |
+| --- | --- |
+| Gigabyte B760M DS3H DDR4, F23 -> F25 | Default AC BACK is **Always Off**, default PTT Enabled: both reset by the flash. VT-d, VMD, Secure Boot, CSM off and the CPU fan preset survived. Setup opens in Easy Mode after a flash (F2 for Advanced). Q-Flash could not see the NVMe ESP behind VMD; the KVM virtual USB worked. Checksum on the page = 16-bit byte sum of the image. Save dialog lists "Last Modified" changes (2026-11-17) |
+
 ## Reading a setting from Linux instead of the screen
 
 Prefer this when it exists: it checks the effect, not the label.

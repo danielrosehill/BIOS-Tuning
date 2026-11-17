@@ -21,7 +21,11 @@ Reference: `reference/kvm-backends.md` (eyes and hands per KVM model), `referenc
 `reference/machines-schema.md`.
 
 Scripts (stdlib/bash only): `scripts/hid-keys.py` (keystrokes via SSH HID gadget or kvmd API),
-`scripts/firmware-facts.sh` (read-only firmware facts as JSON), `scripts/overlay-paths.sh`.
+`scripts/firmware-facts.sh` (read-only firmware facts as JSON), `scripts/bios-checksum.py` (vendor checksum,
+incl. Gigabyte's 16-bit sum), `scripts/make-flash-image.sh` (FAT32 virtual-USB image for the flash tool),
+`scripts/overlay-paths.sh`.
+
+Walkthrough with real screens: `docs/screenshots/gigabyte-f23-to-f25/` (a full F23 -> F25 flash through a PicoKVM).
 
 ## Your machines: the overlay
 

@@ -6,6 +6,7 @@ description: Update (flash) motherboard BIOS through an IP-KVM: download, verify
 # BIOS update
 
 Flashes newer firmware with the board's own setup-time utility, then restores the settings the flash reset.
+First done end to end on 2026-11-17 (Gigabyte B760M DS3H DDR4, F23 -> F25, PicoKVM); the notes below come from it.
 
 ## Inputs
 
@@ -13,38 +14,59 @@ Flashes newer firmware with the board's own setup-time utility, then restores th
 
 ## Steps
 
-1. Preconditions, all required:
-   - A baseline (`baseline-*/settings.md`) newer than the last applied plan. If not, run bios-profile first.
-   - Backups of the machine's data are healthy (ask, or check the user's backup tool). A flash should not
-     touch disks, but a failed one leaves the box down until someone is on site.
-   - Recovery route written down: backup BIOS chip, USB flashback, or "needs a person on site".
-   - kvm-console `check` passes, and the KVM is not powered from a port the flash can cut.
-2. Download from the vendor page for the exact model and revision. Check the file's checksum against the
-   one the vendor publishes (Gigabyte prints it on the page, e.g. `checksum C6AF`). Read the release notes
-   for steps that must come first (ME firmware, intermediate versions).
-3. Stage the file where the flash tool can read it: the EFI system partition (FAT32, usually `/boot/efi/`)
-   or a FAT32 virtual USB from the KVM. `sync` after copying.
-4. Tell the user: downtime estimate (10-20 min), what goes down, and that power must not be cut. Get a yes.
-5. Reboot into the flash utility: the vendor's POST key or the setup menu entry
-   (`reference/vendor-firmware.md`). Pick the staged file; screenshot the version and confirmation screens;
-   start the flash. Screenshot progress every 30-60 s. Send no keys while it runs.
-6. After the automatic reboot, enter setup. Restore settings from the baseline with bios-apply: build a
-   plan whose rows are every baseline value that now differs, mark it `approved` (the user approved the
-   baseline values earlier), apply it.
-7. Verify: `firmware-facts.sh` shows the new `bios_version`; boot entries in `efibootmgr` still point at the
-   OS loader; Secure Boot state matches the baseline. Remove the staged file from the ESP.
-8. Record: `log.md` line, update `machines.json` board firmware, and the user's own records if they keep any.
+1. **Pre-flight checks**, all before any reboot, all required:
+   - Backups healthy: the machine's backup jobs last ran with success (ask, or read the user's backup tool).
+   - Recovery route written down: backup BIOS chip, USB flashback button, or "needs a person on site". If it
+     needs a person, ask the user whether someone can be there if the flash fails, and say it plainly.
+   - Fallback boot loader on the EFI partition (`\EFI\BOOT\BOOTX64.EFI`): a flash can wipe NVRAM boot entries,
+     and the fallback is what boots the OS then.
+   - Pending Secure Boot key enrolment: `ls /sys/firmware/efi/efivars | grep -c MokNew`, `mokutil --list-new`.
+     A flash or reboot can consume or drop it; note its state before and after.
+   - kvm-console `check` passes. On KVMs powered by the host's USB port, ErP must be Disabled so standby power
+     keeps the KVM up through the flash's shutdown (it did on 2026-11-17).
+2. **Find the real file.** Read the download link off the vendor's support page (a browser `read_page` on the
+   download button gives the href). Do not guess the URL: Gigabyte's names carry a build code
+   (`mb_bios_b760m-ds3h-ddr4_8arpt044_f25.zip`); the obvious `..._f25.zip` 404s. Note the page's checksum and
+   release notes (ME/CSME updates, "update to X first", no-downgrade warnings). Check size with a HEAD request.
+3. **Ask the user** with filename, source, size, checksum, downtime (20-25 min incl. a settings pass), what goes
+   down, and the recovery route. One yes covers download, flash and the settings restore.
+4. **Download and verify** (in its own empty directory):
+   `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/bios-checksum.py <file.zip> --expect <page checksum>` must print MATCH.
+   For Gigabyte the page checksum is the 16-bit byte sum of the image; Q-Flash shows the same value before writing.
+5. **Stage where the flash tool can see it.** Prefer KVM virtual media: the OS disk may be invisible to the flash
+   tool (NVMe behind Intel VMD/RST was, on 2026-11-17; Q-Flash listed only the KVM drive).
+   - Build: `bash ${CLAUDE_PLUGIN_ROOT}/scripts/make-flash-image.sh <image-file> f25.img`
+   - Gadget KVMs over SSH: copy the image to the KVM, then point the mass-storage LUN at it read-only
+     (`/sys/kernel/config/usb_gadget/<g>/functions/mass_storage.*/lun.0/{ro,file}`). Other KVMs: the web UI's
+     virtual media upload.
+   - **Attach before the reboot.** UEFI enumerates USB at power-on; media swapped in while setup is open is not
+     seen (the drive stays listed but empty). If that happens: Exit Without Saving, catch setup again.
+   - The EFI system partition is the fallback when the flash tool can see the disk.
+6. **Baseline in the same session**: kvm-console `enter-setup`, screenshot every role-relevant page (bios-profile
+   step 4) into `baseline-<date>/` with `settings.md` marking each value to RESTORE. Linux readouts taken before
+   the reboot (Secure Boot, VT-x, IOMMU, memory speed) cover pages that are slow to reach.
+7. **Flash.** Open the flash tool (Gigabyte: F8 or the Q-Flash button in setup), Update BIOS, pick the file.
+   Read the "Update BIOS" panel: model, version, date and checksum must match step 2 before "Start". Gigabyte
+   then warns the system will shut down and continue after restart: OK. Video drops ("no signal") while it
+   power-cycles; send no keys. Screenshot progress every 30-60 s.
+8. **Settings pass, always.** The board may boot straight into the OS on defaults. Linux checks pass even when
+   a setting with no Linux readout was reset: on 2026-11-17 F25 came back with AC BACK = **Always Off** and PTT
+   = Enabled, while VT-d, VMD, Secure Boot, CSM and the fan preset survived. Reboot into setup, compare every
+   RESTORE line with the baseline, fix differences, F10: the save dialog's "Last Modified" list must equal the
+   changes you made.
+9. **Verify and clean up**: `firmware-facts.sh` shows the new `bios_version`; boot entries intact; Secure Boot
+   as baseline; `grub-editenv list` clean; `systemctl --failed` unchanged. Detach and delete the virtual media
+   image, delete staged files on the ESP and the download directory.
+10. **Record**: `log.md`, `machines.json` board firmware, the flash screenshots, and the user's own records.
 
 ## Data storage
 
-Session screenshots and the restore plan under `<overlay>/machines/<name>/` (`scripts/overlay-paths.sh dir`).
-The downloaded firmware file is not kept after the flash.
+Session screenshots, baseline and restore plan under `<overlay>/machines/<name>/` (`scripts/overlay-paths.sh dir`).
+The firmware file and disk image are deleted after the flash.
 
 ## Notes
 
-- Highest-risk action in this plugin. Never run it unattended, never on battery or a flaky supply, never with
-  a beta file unless the user named it.
-- Secure Boot keys (db/dbx, MOK) can be reset by a flash: check pending MOK enrolment (`mokutil --list-new`)
-  and module signing after.
-- Boards on LVFS (`fwupdmgr get-updates` lists the system firmware) can update from Linux instead; prefer
-  that route when it exists.
+- Highest-risk action in this plugin. Never unattended, never on battery or a flaky supply, never a beta unless
+  the user named it.
+- Boards on LVFS (`fwupdmgr get-updates` lists the system firmware) can update from Linux; prefer that route then.
+- See kvm-console for input pacing: setup UIs drop keys sent faster than ~0.3 s apart.
