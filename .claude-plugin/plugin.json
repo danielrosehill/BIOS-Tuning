@@ -1,6 +1,6 @@
 {
   "name": "bios-tuning",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Profile, tune and update motherboard BIOS/UEFI settings through an IP-KVM (PicoKVM, PiKVM, JetKVM, NanoKVM): role-based recommendations, verified changes, safe flashing. Your machines live in a private overlay.",
   "author": {"name": "Daniel Rosehill", "url": "https://github.com/danielrosehill"},
   "repository": "https://github.com/danielrosehill/BIOS-Tuning",

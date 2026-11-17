@@ -26,7 +26,8 @@ for how to see and type on the user's KVM model.
 **enter-setup**
 1. Tell the user what goes down (`depends_on_it`) and get a yes for the reboot.
 2. Reboot from the OS (`ssh <machine.ssh> 'sudo systemctl reboot'`). Do not use hard reset unless the OS is hung.
-3. Start tapping the setup key at once and keep going through POST:
+3. Wait until the target stops answering ping (an OS shutdown with many containers can take minutes), then
+   tap the setup key and keep going through POST. Extra taps once setup is open are harmless:
    `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/hid-keys.py --machine <name> --repeat 40 --delay 0.15 Del`
    (key per vendor: `reference/vendor-firmware.md`).
 4. Screenshot. If the OS boot screen appears instead, wait for the OS, reboot and try again with a longer
@@ -34,6 +35,9 @@ for how to see and type on the user's KVM model.
 5. If the board opens in EZ mode, switch to Advanced (F2 Gigabyte, F7 MSI/ASUS).
 
 **navigate**
+- If no highlight is visible after an arrow key (graphical setups such as Gigabyte's often hide it until
+  the mouse moves), click the item in the KVM video with the browser: KVMs with an absolute mouse pass the
+  click through. Then use keys again; the highlight follows the click.
 - One key, then one screenshot. Arrow keys move the highlight; read where it is before Enter.
 - Read every value on the screen before changing anything. Crop or zoom the screenshot when the text is small.
 - When you find a setting's real path, write it into the machine's `settings_map` in `machines.json`.
@@ -44,6 +48,10 @@ for how to see and type on the user's KVM model.
   Check the list matches the plan exactly, then Enter. If anything unexpected is listed, Esc and stop.
 - Discard: Esc to the exit page, choose "Exit without saving" / "Discard changes and exit", confirm on screen.
 - After the reboot, wait for SSH on the target and run its Linux checks (bios-apply step 6).
+- Then check the boot was recorded as good. GRUB machines: `grub-editenv /boot/grub/grubenv list` must not
+  show `recordfail=1`, and `systemctl --failed` should show nothing new compared with the previous boot
+  (`journalctl -b -1 -u <unit>`). A leftover `recordfail` makes the next unattended boot stop at the GRUB menu,
+  which defeats power-on-after-power-loss. Clear it by re-running the distro's unit (Ubuntu: `grub2-common`).
 
 ## Data storage
 

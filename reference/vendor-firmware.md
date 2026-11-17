@@ -7,7 +7,7 @@ the real path for the user's board in the overlay (`machines.json` -> `settings_
 
 | Vendor | Enter setup | Boot menu | Flash utility (key at POST / where in setup) | Save and exit |
 | --- | --- | --- | --- | --- |
-| Gigabyte (AMI) | Del | F12 | Q-Flash: End at POST, or setup top bar | F10, Enter |
+| Gigabyte (AMI) | Del | F12 | Q-Flash: End at POST, or F8 / button in setup | F10, Enter; or Save & Exit tab (Yes/No dialog) |
 | MSI (AMI) | Del | F11 | M-Flash: setup left panel (reboots into flash mode) | F10, Enter |
 | ASUS (AMI) | Del or F2 | F8 | EZ Flash: Tool menu, or Alt+F2 at POST on some | F10, Enter |
 | ASRock (AMI) | F2 or Del | F11 | Instant Flash: Tool menu | F10, Enter |
